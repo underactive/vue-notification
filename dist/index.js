@@ -347,12 +347,19 @@ var Component = {
     closeOnClick: {
       type: Boolean,
       default: true
+    },
+
+    pauseOnHover: {
+      type: Boolean,
+      default: false
     }
+
   },
   data: function data() {
     return {
       list: [],
-      velocity: __WEBPACK_IMPORTED_MODULE_0__index__["default"].params.velocity
+      velocity: __WEBPACK_IMPORTED_MODULE_0__index__["default"].params.velocity,
+      timerControl: ""
     };
   },
   mounted: function mounted() {
@@ -401,8 +408,19 @@ var Component = {
   },
   methods: {
     destroyIfNecessary: function destroyIfNecessary(item) {
+      this.$emit('click', item);
       if (this.closeOnClick) {
         this.destroy(item);
+      }
+    },
+    pauseTimeout: function pauseTimeout() {
+      if (this.pauseOnHover) {
+        this.timerControl.pause();
+      }
+    },
+    resumeTimeout: function resumeTimeout() {
+      if (this.pauseOnHover) {
+        this.timerControl.resume();
       }
     },
     addItem: function addItem(event) {
@@ -444,9 +462,9 @@ var Component = {
       };
 
       if (duration >= 0) {
-        item.timer = setTimeout(function () {
-          _this.destroy(item);
-        }, item.length);
+        this.timerControl = new __WEBPACK_IMPORTED_MODULE_2__util__["c" /* Timer */](function () {
+          return _this.destroy(item);
+        }, item.length, item);
       }
 
       var direction = this.reverse ? !this.botToTop : this.botToTop;
@@ -495,6 +513,8 @@ var Component = {
       if (!this.isVA) {
         this.clean();
       }
+
+      this.$emit('destroy', item);
     },
     destroyById: function destroyById(id) {
       var item = this.list.find(function (v) {
@@ -658,6 +678,7 @@ var parse = function parse(value) {
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return Id; });
 /* unused harmony export split */
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return listToDirection; });
+/* harmony export (immutable) */ __webpack_exports__["c"] = Timer;
 var directions = {
   x: ['left', 'center', 'right'],
   y: ['top', 'bottom']
@@ -697,6 +718,24 @@ var listToDirection = function listToDirection(value) {
   });
 
   return { x: x, y: y };
+};
+
+function Timer(callback, delay, notifItem) {
+  var start = void 0,
+      remaining = delay;
+
+  this.pause = function () {
+    clearTimeout(notifItem.timer);
+    remaining -= Date.now() - start;
+  };
+
+  this.resume = function () {
+    start = Date.now();
+    clearTimeout(notifItem.timer);
+    notifItem.timer = setTimeout(callback, remaining);
+  };
+
+  this.resume();
 };
 
 /***/ }),
@@ -847,6 +886,10 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       style: (_vm.notifyWrapperStyle(item)),
       attrs: {
         "data-id": item.id
+      },
+      on: {
+        "mouseenter": _vm.pauseTimeout,
+        "mouseleave": _vm.resumeTimeout
       }
     }, [_vm._t("body", [_c('div', {
       class: _vm.notifyClass(item),
